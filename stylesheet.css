@@ -16,5 +16,7 @@ body {
   border: 5px solid whitesmoke;
   background-color: #1b0324;
   /*  width: 40%;
-  height: 550px; */
+  height: 550px; 
+  //the javascript offset (required for mouse coordinates) doesn't properly work if css is used to set the height, width
+  */
 }

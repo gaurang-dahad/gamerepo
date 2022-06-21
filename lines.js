@@ -94,6 +94,7 @@ canvas.addEventListener('click', function (event) {
   line1.currentPoint.x = clickX;
   line1.currentPoint.y = clickY;
   line1.points.push({ x: clickX, y: clickY });
+
   //console.log(line1.points);
   line1.drawLines();
   line1.drawCorners();
