@@ -13,8 +13,8 @@ body {
 }
 
 #gameCanvas {
-  border: 5px solid black;
+  border: 5px solid whitesmoke;
   background-color: #1b0324;
-  width: 40%;
-  height: 550px;
+  /*  width: 40%;
+  height: 550px; */
 }
