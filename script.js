@@ -153,6 +153,7 @@ class Ball {
     }
   }
 
+  // NOT WORKING AS EXPECTED
   //checks collide between lines and the ball
   checkCollision(pos1, pos2, posball) {
     const length = Math.sqrt(
@@ -179,7 +180,6 @@ class Ball {
           ball.velocity.x = m;
           ball.velocity = this.unit(ball.vel);
           ball.velocity = this.mult(9, ball.vel);
-          //Bounce_sound.play()
         }
       }
     }
@@ -219,16 +219,6 @@ class Ball {
 const ball1 = new Ball();
 ball1.draw();
 
-/* requestAnimationFrame(ballfall);
-
-function ballfall() {
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-  ball1.draw();
-  ball1.move();
-
-  requestAnimationFrame(ballfall);
-} */
-
 //END OF THE BALL SCRIPT
 
 //THE SCRIPT FROM THE LINE STARTS HERE
@@ -243,6 +233,7 @@ class Lines {
     this.currentPoint = { x: canvas.width / 2, y: canvas.height };
   }
 
+  // draws lines between the last clicked point and the current hover point
   hoverLine(x, y) {
     ctx.beginPath();
     ctx.strokeStyle = '#ffffff';
@@ -260,8 +251,6 @@ class Lines {
     //ctx.moveTo(0, canvas.height);
     //ctx.lineTo(canvas.width, canvas.height / 2);
     for (let i = 0; i < this.points.length - 1; i++) {
-      //ctx.strokeStyle = '#1b0324';
-      //ctx.lineWidth = 2.5;
       //ctx.moveTo(this.points[i].x, this.points[i].y);
       ctx.lineTo(this.points[i + 1].x, this.points[i + 1].y);
       ctx.stroke();
@@ -291,6 +280,9 @@ let line1 = new Lines();
 
 //ANIMATION SCRIPTS RUN HERE AS WELL AS THE MOUSE FUNCTIONS (HOVER AND CLICK)
 
+//supposed to represent the hover coordinates
+let coordinates = { x: canvas.width / 2, y: canvas.height };
+
 generateRandomShapes();
 
 setInterval(generateRandomShapes, 4000);
@@ -299,24 +291,41 @@ setInterval(generateRandomShapes, 4000);
 
 function animate() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  //background effect occurs here
   drawRandomShapes();
+
+  //ball drawing and movement occurs below this
   ball1.draw();
   ball1.move();
+
+  // hover function things are below this (should basically occur every frame) i.e. drawing the lines
+  // drawing the existing lines and then the hover line
+  line1.drawLines();
+  line1.drawCorners();
+  line1.hoverLine(coordinates.x, coordinates.y);
+  console.log(coordinates.x, coordinates.y);
+
   //for animation loop
   window.requestAnimationFrame(animate);
 }
 
-//NEED TO CHECK HOW TO MAKE THE MOUSE FUNCTIONS AND THE ANIMATION WORK TOGETHER AT THE SAME TIME
+let clickFunction = function (event) {
+  let rect = canvas.getBoundingClientRect();
+  let clickX = event.clientX - rect.left;
+  let clickY = event.clientY - rect.top;
+  line1.currentPoint.x = clickX;
+  line1.currentPoint.y = clickY;
+  line1.points.push({ x: clickX, y: clickY });
 
-canvas.addEventListener('mousemove', function (e) {
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-  //console.log(e);
-  coordinates = mousePosition(canvas, e);
-  //console.log(coordinates);
-  line1.hoverLine(coordinates.x, coordinates.y);
-  line1.drawLines();
-  line1.drawCorners();
-});
+  //console.log(line1.points);
+  //line1.drawLines();
+  //line1.drawCorners();
+};
+
+let hoverFunction = function (event) {
+  coordinates = mousePosition(canvas, event);
+};
 
 function mousePosition(canvas, event) {
   let rect = canvas.getBoundingClientRect();
@@ -326,17 +335,7 @@ function mousePosition(canvas, event) {
   return { x: x, y: y };
 }
 
-canvas.addEventListener('click', function (event) {
-  let rect = canvas.getBoundingClientRect();
-  let clickX = event.clientX - rect.left;
-  let clickY = event.clientY - rect.top;
-  line1.currentPoint.x = clickX;
-  line1.currentPoint.y = clickY;
-  line1.points.push({ x: clickX, y: clickY });
+canvas.addEventListener('mouseover', hoverFunction);
+canvas.addEventListener('click', clickFunction);
 
-  //console.log(line1.points);
-  line1.drawLines();
-  line1.drawCorners();
-});
-
-//animate();
+animate();
