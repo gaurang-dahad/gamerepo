@@ -109,24 +109,29 @@ class Ball {
     this.velocity = { x: 0, y: 0 };
     this.radius = 12;
     this.score = 0;
+    this.offset = 0;
   }
   draw() {
     //Text things: score and the death message is here
     ctx.fillStyle = 'white';
     ctx.font = 'Bold 15px sans-serif';
-    this.score = Math.max(this.score, 0);
+    this.score = Math.max(this.score, Math.floor((-1 / 10) * this.offset) - 5);
     ctx.fillText(`Score: ${this.score}`, 15, 30);
     if (this.death()) {
       ctx.fillText(
         'You Died! Press Ctrl+R or F5 key to restart the game.',
-        canvas.width / 2,
-        canvas.height / 2
+        canvas.width / 5,
+        canvas.height / 2.25
       );
+      if (this.death() && this.position.y >= canvas.height - 50) {
+        this.velocity.x = 0;
+        this.velocity.y = 0;
+      }
     }
 
     //The drawing of the ball is below this
     ctx.beginPath();
-    ctx.fillStyle = '#0f0';
+    ctx.fillStyle = '#1b0324';
     ctx.arc(
       this.position.x,
       this.position.y,
@@ -140,8 +145,12 @@ class Ball {
   }
   move() {
     this.groundCollide();
+    this.position.x += this.velocity.x;
     this.position.y += this.velocity.y;
     this.velocity.y += 0.1;
+    if (this.position.y < 0.5 * canvas.height) {
+      this.offset = this.position.y - 0.5 * canvas.height;
+    }
   }
 
   //conditions and result when the ball touches the ground
@@ -153,34 +162,36 @@ class Ball {
     }
   }
 
-  // NOT WORKING AS EXPECTED
   //checks collide between lines and the ball
   checkCollision(pos1, pos2, posball) {
     const length = Math.sqrt(
       (pos1.x - pos2.x) * (pos1.x - pos2.x) +
         (pos1.y - pos2.y) * (pos1.y - pos2.y)
     );
+
     const t =
       -(
         (pos1.x - posball.x) * (pos2.x - pos1.x) +
         (pos1.y - posball.y) * (pos2.y - pos1.y)
       ) /
       (length * length);
-    if (0 <= t && t <= 1) {
-      var d = Math.abs(
-        (pos2.x - pos1.x) * (pos1.y - posball.y) -
-          (pos2.y - pos1.y) * (pos1.x - posball.x)
+
+    if (t >= 0 && t <= 1) {
+      //calculates perpendicular distance between centre of ball and line
+      const distFromLine = Math.abs(
+        ((pos2.y - pos1.y) * (posball.x - pos1.x) -
+          (posball.y - pos1.y) * (pos2.x - pos1.x)) /
+          length
       );
-      d = d / length;
-      if (d <= 20) {
-        if (ball.velocity.y > 0) {
-          ball.velocity.y = -1;
-          var m = (pos2.y - pos1.y) / (pos2.x - pos1.x);
-          m = Math.min(m, 100);
-          ball.velocity.x = m;
-          ball.velocity = this.unit(ball.vel);
-          ball.velocity = this.mult(9, ball.vel);
-        }
+
+      //if that distance is less than ball.radius and ball is moving downwards, then collision occurs
+      if (distFromLine <= ball1.radius && ball1.velocity.y > 0) {
+        ball1.velocity.y *= -1;
+        let slope = (pos2.y - pos1.y) / (pos2.x - pos1.x);
+        ball1.velocity.x = Math.min(slope, 60);
+        ball1.velocity = this.unit(ball1.velocity);
+        ball1.velocity = this.multiplication(7, ball1.velocity);
+        //console.log(ball1.velocity);
       }
     }
   }
@@ -188,7 +199,7 @@ class Ball {
   //returns the unit vector of the input vector in form {x,y}
   unit(vector) {
     var magnitude = Math.sqrt(vector.x * vector.x + vector.y * vector.y);
-    return this.mult(1 / magnitude, n);
+    return this.multiplication(1 / magnitude, vector);
   }
 
   //returns the multiplication of a scalar and a vector
@@ -218,7 +229,6 @@ class Ball {
 
 const ball1 = new Ball();
 ball1.draw();
-
 //END OF THE BALL SCRIPT
 
 //THE SCRIPT FROM THE LINE STARTS HERE
@@ -238,7 +248,7 @@ class Lines {
     ctx.beginPath();
     ctx.strokeStyle = '#ffffff';
     ctx.lineWidth = 0.75;
-    ctx.moveTo(this.currentPoint.x, this.currentPoint.y);
+    ctx.moveTo(this.currentPoint.x, this.currentPoint.y - ball1.offset);
     ctx.lineTo(x, y);
     ctx.stroke();
   }
@@ -252,8 +262,9 @@ class Lines {
     //ctx.lineTo(canvas.width, canvas.height / 2);
     for (let i = 0; i < this.points.length - 1; i++) {
       //ctx.moveTo(this.points[i].x, this.points[i].y);
-      ctx.lineTo(this.points[i + 1].x, this.points[i + 1].y);
+      ctx.lineTo(this.points[i + 1].x, this.points[i + 1].y - ball1.offset);
       ctx.stroke();
+      ball1.checkCollision(this.points[i], this.points[i + 1], ball1.position);
     }
   }
 
@@ -264,11 +275,23 @@ class Lines {
       ctx.beginPath();
       ctx.fillStyle = 'white';
       ctx.linewidth = 10;
-      ctx.arc(this.points[i].x, this.points[i].y, 10, 0, 2 * Math.PI);
+      ctx.arc(
+        this.points[i].x,
+        this.points[i].y - ball1.offset,
+        10,
+        0,
+        2 * Math.PI
+      );
       ctx.fill();
       ctx.beginPath();
       ctx.fillStyle = '#1B0324';
-      ctx.arc(this.points[i].x, this.points[i].y, 5, 0, 2 * Math.PI);
+      ctx.arc(
+        this.points[i].x,
+        this.points[i].y - ball1.offset,
+        5,
+        0,
+        2 * Math.PI
+      );
       ctx.fill();
     }
   }
@@ -277,6 +300,42 @@ class Lines {
 let line1 = new Lines();
 
 //THE SCRIPT FOR LINE ENDS HERE
+
+//SCRIPT FOR SPRITE STARTS HERE
+
+let listSprites = [];
+const nSprites = 8;
+for (let index = 0; index < nSprites; index++) {
+  image = new Image();
+  image.src = `./sprites/sprite${index + 1}.png`;
+  listSprites.push(image);
+}
+
+class Sprite {
+  constructor() {
+    this.position = { x: ball1.position.x, y: ball1.position.y };
+    this.index = 0;
+    this.width = 69;
+    this.height = 256;
+  }
+  draw() {
+    ctx.drawImage(
+      listSprites[Math.floor(this.index / 4)],
+      //code below this has been adjusted according to the sprite widths
+      ball1.position.x - this.width / 2,
+      ball1.position.y - 0.5 * this.height - ball1.offset,
+      this.width / 2,
+      this.height / 2
+    );
+    this.index++;
+    if (this.index > 4 * nSprites - 1) {
+      this.index = 0;
+    }
+  }
+}
+sprite1 = new Sprite();
+
+//END OF THE SPRITE SCRIPT
 
 //ANIMATION SCRIPTS RUN HERE AS WELL AS THE MOUSE FUNCTIONS (HOVER AND CLICK)
 
@@ -298,44 +357,40 @@ function animate() {
   //ball drawing and movement occurs below this
   ball1.draw();
   ball1.move();
+  sprite1.draw();
 
   // hover function things are below this (should basically occur every frame) i.e. drawing the lines
   // drawing the existing lines and then the hover line
   line1.drawLines();
   line1.drawCorners();
   line1.hoverLine(coordinates.x, coordinates.y);
-  console.log(coordinates.x, coordinates.y);
+  //console.log(coordinates.x, coordinates.y);
 
   //for animation loop
   window.requestAnimationFrame(animate);
 }
 
+//adds the click point to the line1.points array
 let clickFunction = function (event) {
   let rect = canvas.getBoundingClientRect();
   let clickX = event.clientX - rect.left;
-  let clickY = event.clientY - rect.top;
+  let clickY = event.clientY - rect.top + ball1.offset;
   line1.currentPoint.x = clickX;
   line1.currentPoint.y = clickY;
   line1.points.push({ x: clickX, y: clickY });
-
-  //console.log(line1.points);
-  //line1.drawLines();
-  //line1.drawCorners();
 };
 
+//sets the coordinates variable to the coordinates of the mouse position
 let hoverFunction = function (event) {
-  coordinates = mousePosition(canvas, event);
-};
-
-function mousePosition(canvas, event) {
   let rect = canvas.getBoundingClientRect();
   let x = event.clientX - rect.left;
   let y = event.clientY - rect.top;
-  //console.log(x, y);
-  return { x: x, y: y };
-}
 
-canvas.addEventListener('mouseover', hoverFunction);
+  coordinates.x = x;
+  coordinates.y = y;
+};
+
+canvas.addEventListener('mousemove', hoverFunction);
 canvas.addEventListener('click', clickFunction);
 
 animate();
